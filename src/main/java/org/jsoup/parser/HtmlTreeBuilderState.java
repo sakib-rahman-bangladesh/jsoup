@@ -460,7 +460,8 @@ enum HtmlTreeBuilderState {
                     tb.processStartTag("form");
                     if (startTag.hasAttribute("action")) {
                         Element form = tb.getFormElement();
-                        form.attr("action", startTag.attributes.get("action"));
+                        String action = startTag.attributes.get("action");
+                        form.attributes().put("action", action); // always LC, so don't need to scan up for ownerdoc
                     }
                     tb.processStartTag("hr");
                     tb.processStartTag("label");
@@ -761,6 +762,14 @@ enum HtmlTreeBuilderState {
         boolean anyOtherEndTag(Token t, HtmlTreeBuilder tb) {
             final String name = t.asEndTag().normalName; // case insensitive search - goal is to preserve output case, not for the parse to be case sensitive
             final ArrayList<Element> stack = tb.getStack();
+
+            // deviate from spec slightly to speed when super deeply nested
+            Element elFromStack = tb.getFromStack(name);
+            if (elFromStack == null) {
+                tb.error(this);
+                return false;
+            }
+
             for (int pos = stack.size() - 1; pos >= 0; pos--) {
                 Element node = stack.get(pos);
                 if (node.normalName().equals(name)) {
