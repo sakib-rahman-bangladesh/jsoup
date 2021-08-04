@@ -159,4 +159,26 @@ public class FuzzFixesTest {
         Document docXml = Jsoup.parse(new FileInputStream(in), "UTF-8", "https://example.com", Parser.xmlParser());
         assertNotNull(docXml);
     }
+
+    @Test
+    public void parseTimeout1605() throws IOException {
+        // timesink with 600K of accumulating attribute name
+        File in = ParseTest.getFile("/fuzztests/1605.html.gz");
+
+        Document doc = Jsoup.parse(in, "UTF-8");
+        assertNotNull(doc);
+
+        Document docXml = Jsoup.parse(new FileInputStream(in), "UTF-8", "https://example.com", Parser.xmlParser());
+        assertNotNull(docXml);
+    }
+
+    @Test
+    public void parseTimeout1606() throws IOException {
+        // https://github.com/jhy/jsoup/issues/1606
+        // Timesink when closing missing empty tag (in XML comment processed as HTML) when thousands deep
+        File in = ParseTest.getFile("/fuzztests/1606.html.gz");
+
+        Document docXml = Jsoup.parse(new FileInputStream(in), "UTF-8", "https://example.com", Parser.xmlParser());
+        assertNotNull(docXml);
+    }
 }

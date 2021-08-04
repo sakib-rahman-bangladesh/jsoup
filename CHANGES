@@ -14,8 +14,17 @@ jsoup changelog
   * Bugfix: in the XML parser, XML processing instructions without attributes would be serialized as if they did.
     <https://github.com/jhy/jsoup/issues/770>
 
-  * Bugfix: updated the HtmlTreeParser resetInsertionMode to the current spec for supported elements
+  * Bugfix: updated the HtmlTreeParser resetInsertionMode to the current spec for supported elements.
     <https://github.com/jhy/jsoup/issues/1491>
+
+  * Bugfix: fixed an NPE when parsing fragment HTML into a standalone table element.
+    <https://github.com/jhy/jsoup/issues/1603>
+
+  * Bugfix: fixed an NPE when parsing fragment heading HTML into a standalone p element.
+    <https://github.com/jhy/jsoup/issues/1601>
+
+  * Bugfix: fixed an IOOB when parsing a formatting fragment into a standalone p element.
+    <https://github.com/jhy/jsoup/issues/1602>
 
   * Bugfix [Fuzz]: fixed a slow parse when a tag or an attribute name has thousands of null characters in it.
     <https://github.com/jhy/jsoup/issues/1580>
@@ -42,6 +51,14 @@ jsoup changelog
 
   * Bugfix [Fuzz]: Speed improvement when the stack was thousands of items deep, and non-matching close tags sent.
     <https://github.com/jhy/jsoup/issues/1596>
+
+  * Bugfix [Fuzz]: Speed improvement when an attribute name is 600K of quote characters or otherwise needs accumulation
+    vs being able to read in one hit.
+    <https://github.com/jhy/jsoup/issues/1605>
+
+  * Bugfix [Fuzz]: Speed improvement when closing missing empty tags (in XML comment processed as HTML) when thousands
+    deep in stack.
+    <https://github.com/jhy/jsoup/issues/1606>
 
 *** Release 1.14.1 [2021-Jul-10]
   * Change: updated the minimum supported Java version from Java 7 to Java 8.

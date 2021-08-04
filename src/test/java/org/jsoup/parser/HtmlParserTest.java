@@ -1424,4 +1424,30 @@ public class HtmlParserTest {
         int xmlElementCount = xml.getAllElements().size();
         return htmlElementCount > xmlElementCount;
     }
+
+    @Test public void canSetHtmlOnCreatedTableElements() {
+        // https://github.com/jhy/jsoup/issues/1603
+        Element element = new Element("tr");
+        element.html("<tr><td>One</td></tr>");
+        assertEquals("<tr>\n <tr>\n  <td>One</td>\n </tr>\n</tr>", element.outerHtml());
+    }
+
+    @Test public void parseFragmentOnCreatedDocument() {
+        // https://github.com/jhy/jsoup/issues/1601
+        String bareFragment = "<h2>text</h2>";
+        List<Node> nodes = new Document("").parser().parseFragmentInput(bareFragment, new Element("p"), "");
+        assertEquals(1, nodes.size());
+        Node node = nodes.get(0);
+        assertEquals("h2", node.nodeName());
+        assertEquals("<p><h2>text</h2></p>", node.parent().outerHtml());
+    }
+
+    @Test public void nestedPFragments() {
+        // https://github.com/jhy/jsoup/issues/1602
+        String bareFragment = "<p></p><a></a>";
+        List<Node> nodes = new Document("").parser().parseFragmentInput(bareFragment, new Element("p"), "");
+        assertEquals(2, nodes.size());
+        Node node = nodes.get(0);
+        assertEquals("<p><p></p><a></a></p>", node.parent().outerHtml()); // mis-nested because fragment forced into the element, OK
+    }
 }
