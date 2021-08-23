@@ -260,7 +260,7 @@ public final class StringUtil {
         return true;
     }
 
-    private static Pattern extraDotSegmentsPattern = Pattern.compile("^/((\\.{1,2}/)+)");
+    private static final Pattern extraDotSegmentsPattern = Pattern.compile("^/((\\.{1,2}/)+)");
     /**
      * Create a new absolute URL, from a provided existing absolute URL and a relative URL component.
      * @param base the existing absolute base URL
@@ -288,8 +288,8 @@ public final class StringUtil {
      * @return an absolute URL if one was able to be generated, or the empty string if not
      */
     public static String resolve(final String baseUrl, final String relUrl) {
-        URL base;
         try {
+            URL base;
             try {
                 base = new URL(baseUrl);
             } catch (MalformedURLException e) {
@@ -299,9 +299,12 @@ public final class StringUtil {
             }
             return resolve(base, relUrl).toExternalForm();
         } catch (MalformedURLException e) {
-            return "";
+            // it may still be valid, just that Java doesn't have a registered stream handler for it, e.g. tel
+            // we test here vs at start to normalize supported URLs (e.g. HTTP -> http)
+            return validUriScheme.matcher(relUrl).find() ? relUrl : "";
         }
     }
+    private static final Pattern validUriScheme = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+-.]*:");
 
     private static final ThreadLocal<Stack<StringBuilder>> threadLocalBuilders = new ThreadLocal<Stack<StringBuilder>>() {
         @Override

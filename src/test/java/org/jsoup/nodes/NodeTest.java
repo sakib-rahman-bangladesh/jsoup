@@ -132,6 +132,21 @@ public class NodeTest {
         assertEquals("http://example.com/one/two.html", a1.absUrl("href"));
     }
 
+    @Test public void handlesAbsOnUnknownProtocols() {
+        // https://github.com/jhy/jsoup/issues/1610
+        // URL would throw on unknown protocol tel: as no stream handler is registered
+
+        String[] urls = {"mailto:example@example.com", "tel:867-5309"}; // mail has a handler, tel doesn't
+        for (String url : urls) {
+            Attributes attr = new Attributes().put("href", url);
+            Element noBase = new Element(Tag.valueOf("a"), null, attr);
+            assertEquals(url, noBase.absUrl("href"));
+
+            Element withBase = new Element(Tag.valueOf("a"), "http://example.com/", attr);
+            assertEquals(url, withBase.absUrl("href"));
+        }
+    }
+
     @Test public void testRemove() {
         Document doc = Jsoup.parse("<p>One <span>two</span> three</p>");
         Element p = doc.select("p").first();

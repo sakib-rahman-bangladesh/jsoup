@@ -586,7 +586,7 @@ public class HtmlParserTest {
     }
 
     @Test public void testHgroup() {
-        // jsoup used to not allow hroup in h{n}, but that's not in spec, and browsers are OK
+        // jsoup used to not allow hgroup in h{n}, but that's not in spec, and browsers are OK
         Document doc = Jsoup.parse("<h1>Hello <h2>There <hgroup><h1>Another<h2>headline</hgroup> <hgroup><h1>More</h1><p>stuff</p></hgroup>");
         assertEquals("<h1>Hello </h1><h2>There <hgroup><h1>Another</h1><h2>headline</h2></hgroup> <hgroup><h1>More</h1><p>stuff</p></hgroup></h2>", TextUtil.stripNewlines(doc.body().html()));
     }
@@ -651,10 +651,9 @@ public class HtmlParserTest {
         assertEquals("<b>1</b>\n<p><b>2</b>3</p>", doc.body().html());
     }
 
-    @Disabled // todo: test case for https://github.com/jhy/jsoup/issues/845. Doesn't work yet.
     @Test public void handlesMisnestedAInDivs() {
-        String h = "<a href='#1'><div><div><a href='#2'>child</a</div</div></a>";
-        String w = "<a href=\"#1\"></a><div><a href=\"#1\"></a><div><a href=\"#1\"></a><a href=\"#2\">child</a></div></div>";
+        String h = "<a href='#1'><div><div><a href='#2'>child</a></div</div></a>";
+        String w = "<a href=\"#1\"></a> <div> <a href=\"#1\"></a> <div> <a href=\"#1\"></a><a href=\"#2\">child</a> </div> </div>";
         Document doc = Jsoup.parse(h);
         assertEquals(
             StringUtil.normaliseWhitespace(w),
@@ -814,7 +813,7 @@ public class HtmlParserTest {
 
     @Test public void handlesNullInData() {
         Document doc = Jsoup.parse("<p id=\u0000>Blah \u0000</p>");
-        assertEquals("<p id=\"\uFFFD\">Blah \u0000</p>", doc.body().html()); // replaced in attr, NOT replaced in data
+        assertEquals("<p id=\"\uFFFD\">Blah &#x0;</p>", doc.body().html()); // replaced in attr, NOT replaced in data (but is escaped as control char <0x20)
     }
 
     @Test public void handlesNullInComments() {
@@ -1043,11 +1042,11 @@ public class HtmlParserTest {
     }
 
     @Test public void testSupportsNonAsciiTags() {
-        String body = "<進捗推移グラフ>Yes</進捗推移グラフ><русский-тэг>Correct</<русский-тэг>";
+        String body = "<a進捗推移グラフ>Yes</a進捗推移グラフ><bрусский-тэг>Correct</<bрусский-тэг>";
         Document doc = Jsoup.parse(body);
-        Elements els = doc.select("進捗推移グラフ");
+        Elements els = doc.select("a進捗推移グラフ");
         assertEquals("Yes", els.text());
-        els = doc.select("русский-тэг");
+        els = doc.select("bрусский-тэг");
         assertEquals("Correct", els.text());
     }
 
@@ -1449,5 +1448,34 @@ public class HtmlParserTest {
         assertEquals(2, nodes.size());
         Node node = nodes.get(0);
         assertEquals("<p><p></p><a></a></p>", node.parent().outerHtml()); // mis-nested because fragment forced into the element, OK
+    }
+
+    @Test public void nestedAnchorAdoption() {
+        // https://github.com/jhy/jsoup/issues/1608
+        String html = "<a>\n<b>\n<div>\n<a>test</a>\n</div>\n</b>\n</a>";
+        Document doc = Jsoup.parse(html);
+        assertNotNull(doc);
+        assertEquals("<a> <b> </b></a><b><div><a> </a><a>test</a> </div> </b>", TextUtil.stripNewlines(doc.body().html()));
+    }
+
+    @Test public void tagsMustStartWithAscii() {
+        // https://github.com/jhy/jsoup/issues/1006
+        String[] valid = {"a一", "a会员挂单金额5", "table(╯°□°)╯"};
+        String[] invalid = {"一", "会员挂单金额5", "(╯°□°)╯"};
+
+        for (String tag : valid) {
+            Document doc = Jsoup.parse("<" + tag + ">Text</" + tag + ">");
+            Elements els = doc.getElementsByTag(tag);
+            assertEquals(1, els.size());
+            assertEquals(tag, els.get(0).tagName());
+            assertEquals("Text", els.get(0).text());
+        }
+
+        for (String tag : invalid) {
+            Document doc = Jsoup.parse("<" + tag + ">Text</" + tag + ">");
+            Elements els = doc.getElementsByTag(tag);
+            assertEquals(0, els.size());
+            assertEquals("&lt;" + tag + "&gt;Text<!--/" + tag + "-->", doc.body().html());
+        }
     }
 }
