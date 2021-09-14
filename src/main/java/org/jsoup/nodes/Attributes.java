@@ -371,7 +371,8 @@ public class Attributes implements Iterable<Attribute>, Cloneable {
     }
 
     /**
-     * Checks if these attributes are equal to another set of attributes, by comparing the two sets
+     * Checks if these attributes are equal to another set of attributes, by comparing the two sets. Note that the order
+     * of the attributes does not impact this equality (as per the Map interface equals()).
      * @param o attributes to compare with
      * @return if both sets of attributes have the same content
      */
@@ -381,10 +382,21 @@ public class Attributes implements Iterable<Attribute>, Cloneable {
         if (o == null || getClass() != o.getClass()) return false;
 
         Attributes that = (Attributes) o;
-
         if (size != that.size) return false;
-        if (!Arrays.equals(keys, that.keys)) return false;
-        return Arrays.equals(vals, that.vals);
+        for (int i = 0; i < size; i++) {
+            String key = keys[i];
+            int thatI = that.indexOfKey(key);
+            if (thatI == NotFound)
+                return false;
+            String val = vals[i];
+            String thatVal = that.vals[thatI];
+            if (val == null) {
+                if (thatVal != null)
+                    return false;
+            } else if (!val.equals(thatVal))
+                return false;
+        }
+        return true;
     }
 
     /**
