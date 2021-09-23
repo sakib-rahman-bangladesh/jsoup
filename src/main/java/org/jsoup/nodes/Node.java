@@ -520,13 +520,15 @@ public abstract class Node implements Cloneable {
                 }
             }
             if (sameList) { // moving, so OK to empty firstParent and short-circuit
+                boolean wasEmpty = childNodeSize() == 0;
                 firstParent.empty();
                 nodes.addAll(index, Arrays.asList(children));
                 i = children.length;
                 while (i-- > 0) {
                     children[i].parentNode = this;
                 }
-                reindexChildren(index);
+                if (!(wasEmpty && children[0].siblingIndex == 0)) // skip reindexing if we just moved
+                    reindexChildren(index);
                 return;
             }
         }
@@ -544,6 +546,7 @@ public abstract class Node implements Cloneable {
     }
 
     private void reindexChildren(int start) {
+        if (childNodeSize() == 0) return;
         final List<Node> childNodes = ensureChildNodes();
 
         for (int i = start; i < childNodes.size(); i++) {
@@ -694,6 +697,17 @@ public abstract class Node implements Cloneable {
     public boolean equals(@Nullable Object o) {
         // implemented just so that javadoc is clear this is an identity test
         return this == o;
+    }
+
+    /**
+     Provides a hashCode for this Node, based on it's object identity. Changes to the Node's content will not impact the
+     result.
+     @return an object identity based hashcode for this Node
+     */
+    @Override
+    public int hashCode() {
+        // implemented so that javadoc and scanners are clear this is an identity test
+        return super.hashCode();
     }
 
     /**

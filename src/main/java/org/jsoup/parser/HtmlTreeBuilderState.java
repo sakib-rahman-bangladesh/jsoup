@@ -487,8 +487,10 @@ enum HtmlTreeBuilderState {
                     tb.processStartTag("form");
                     if (startTag.hasAttribute("action")) {
                         Element form = tb.getFormElement();
-                        String action = startTag.attributes.get("action");
-                        form.attributes().put("action", action); // always LC, so don't need to scan up for ownerdoc
+                        if (form != null && startTag.hasAttribute("action")) {
+                            String action = startTag.attributes.get("action");
+                            form.attributes().put("action", action); // always LC, so don't need to scan up for ownerdoc
+                        }
                     }
                     tb.processStartTag("hr");
                     tb.processStartTag("label");
@@ -542,6 +544,7 @@ enum HtmlTreeBuilderState {
                     tb.reconstructFormattingElements();
                     tb.insert(startTag);
                     tb.framesetOk(false);
+                    if (startTag.selfClosing) break; // don't change states if not added to the stack
 
                     HtmlTreeBuilderState state = tb.state();
                     if (state.equals(InTable) || state.equals(InCaption) || state.equals(InTableBody) || state.equals(InRow) || state.equals(InCell))
@@ -916,10 +919,7 @@ enum HtmlTreeBuilderState {
 
                 Element adopter = new Element(formatEl.tag(), tb.getBaseUri());
                 adopter.attributes().addAll(formatEl.attributes());
-                Node[] childNodes = furthestBlock.childNodes().toArray(new Node[0]);
-                for (Node childNode : childNodes) {
-                    adopter.appendChild(childNode); // append will reparent. thus the clone to avoid concurrent mod.
-                }
+                adopter.appendChildren(furthestBlock.childNodes());
                 furthestBlock.appendChild(adopter);
                 tb.removeFromActiveFormattingElements(formatEl);
                 // insert the new element into the list of active formatting elements at the position of the aforementioned bookmark.
@@ -1547,7 +1547,9 @@ enum HtmlTreeBuilderState {
                     tb.clearFormattingElementsToLastMarker();
                     tb.popTemplateMode();
                     tb.resetInsertionMode();
-                    return tb.process(t);
+                    if (tb.state() != InTemplate) // spec deviation - if we did not break out of Template, stop processing
+                        return tb.process(t);
+                    else return true;
             }
             return true;
         }
