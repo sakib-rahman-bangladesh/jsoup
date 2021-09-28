@@ -593,7 +593,9 @@ enum HtmlTreeBuilderState {
                 case "dt":
                     tb.framesetOk(false);
                     stack = tb.getStack();
-                    for (int i = stack.size() - 1; i > 0; i--) {
+                    final int bottom = stack.size() - 1;
+                    final int upper = bottom >= MaxStackScan ? bottom - MaxStackScan : 0;
+                    for (int i = bottom; i >= upper; i--) {
                         el = stack.get(i);
                         if (inSorted(el.normalName(), Constants.DdDt)) {
                             tb.processEndTag(el.normalName());
@@ -630,7 +632,9 @@ enum HtmlTreeBuilderState {
                     break;
                 default:
                     // todo - bring scan groups in if desired
-                    if (inSorted(name, Constants.InBodyStartEmptyFormatters)) {
+                    if (!Tag.isKnownTag(name)) { // no special rules for custom tags
+                        tb.insert(startTag);
+                    } else if (inSorted(name, Constants.InBodyStartEmptyFormatters)) {
                         tb.reconstructFormattingElements();
                         tb.insertEmpty(startTag);
                         tb.framesetOk(false);
@@ -662,6 +666,7 @@ enum HtmlTreeBuilderState {
             }
             return true;
         }
+        private static final int MaxStackScan = 24; // used for DD / DT scan, prevents runaway
 
         private boolean inBodyEndTag(Token t, HtmlTreeBuilder tb) {
             final Token.EndTag endTag = t.asEndTag();
@@ -887,7 +892,7 @@ enum HtmlTreeBuilderState {
                     } else if (node == formatEl)
                         break;
 
-                    Element replacement = new Element(Tag.valueOf(node.nodeName(), ParseSettings.preserveCase), tb.getBaseUri());
+                    Element replacement = new Element(tb.tagFor(node.nodeName(), ParseSettings.preserveCase), tb.getBaseUri());
                     // case will follow the original node (so honours ParseSettings)
                     tb.replaceActiveFormattingElement(node, replacement);
                     tb.replaceOnStack(node, replacement);

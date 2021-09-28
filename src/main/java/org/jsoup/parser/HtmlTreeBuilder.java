@@ -10,7 +10,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.FormElement;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
-import org.jsoup.select.Elements;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -20,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.jsoup.internal.StringUtil.inSorted;
+import static org.jsoup.parser.HtmlTreeBuilderState.Constants.InTableFoster;
 
 /**
  * HTML Tree Builder; creates a DOM from Tokens.
@@ -131,7 +131,7 @@ public class HtmlTreeBuilder extends TreeBuilder {
                 default:
                     tokeniser.transition(TokeniserState.Data);
             }
-            root = new Element(Tag.valueOf(contextTag, settings), baseUri);
+            root = new Element(tagFor(contextTag, settings), baseUri);
             doc.appendChild(root);
             stack.add(root);
             resetInsertionMode();
@@ -245,13 +245,13 @@ public class HtmlTreeBuilder extends TreeBuilder {
             return el;
         }
 
-        Element el = new Element(Tag.valueOf(startTag.name(), settings), null, settings.normalizeAttributes(startTag.attributes));
+        Element el = new Element(tagFor(startTag.name(), settings), null, settings.normalizeAttributes(startTag.attributes));
         insert(el);
         return el;
     }
 
     Element insertStartTag(String startTagName) {
-        Element el = new Element(Tag.valueOf(startTagName, settings), null);
+        Element el = new Element(tagFor(startTagName, settings), null);
         insert(el);
         return el;
     }
@@ -262,7 +262,7 @@ public class HtmlTreeBuilder extends TreeBuilder {
     }
 
     Element insertEmpty(Token.StartTag startTag) {
-        Tag tag = Tag.valueOf(startTag.name(), settings);
+        Tag tag = tagFor(startTag.name(), settings);
         Element el = new Element(tag, null, settings.normalizeAttributes(startTag.attributes));
         insertNode(el);
         if (startTag.isSelfClosing()) {
@@ -277,7 +277,7 @@ public class HtmlTreeBuilder extends TreeBuilder {
     }
 
     FormElement insertForm(Token.StartTag startTag, boolean onStack, boolean checkTemplateStack) {
-        Tag tag = Tag.valueOf(startTag.name(), settings);
+        Tag tag = tagFor(startTag.name(), settings);
         FormElement el = new FormElement(tag, null, settings.normalizeAttributes(startTag.attributes));
         if (checkTemplateStack) {
             if(!onStack("template"))
@@ -315,7 +315,7 @@ public class HtmlTreeBuilder extends TreeBuilder {
         // if the stack hasn't been set up yet, elements (doctype, comments) go into the doc
         if (stack.isEmpty())
             doc.appendChild(node);
-        else if (isFosterInserts())
+        else if (isFosterInserts() && StringUtil.inSorted(currentElement().normalName(), InTableFoster))
             insertInFosterParent(node);
         else
             currentElement().appendChild(node);
